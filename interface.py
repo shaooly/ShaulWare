@@ -23,24 +23,28 @@ def decryption_start():
 
 def check_payment():
     global canDecrypt
-    transaction_id = textExample.get("1.0", tk.END+"-1c")
+    transaction_id = client_transaction_id.get("1.0", tk.END+"-1c")
     api_key = 'ixhbHrVaDtbmlQQJ'
     api_secret = 'bwlPbxI86g8BSnp7TKb6eFMW47n40B92'
     account_id = "ce4c1a1f-65a4-5098-b6ac-b2f0f16f603f"
 
     client = Client(api_key, api_secret)
     transaction = client.get_transaction(account_id, transaction_id)
-    canDecrypt = transaction["amount"]["amount"] == "0.003" and transaction["to"]["address"] == "my_address" and transaction[""]
+    canDecrypt = transaction["amount"]["amount"] == "0.003" and transaction["to"]["address"] == "my_address"
+    # Changes should me made to canDecrypt.
     print(transaction, canDecrypt)
     # GUI CHANGES HERE...
 
 # ["to"]["address"]
 
 
-textExample = Text(root, height=1, width=40)
-textExample.place(x=120, y=700)
-CheckPayment = tk.Button(root, text="Check Payment", fg="black", bg="white", padx=100, pady=5, command=check_payment)
+client_transaction_id = Text(root, height=2, width=40)
+client_transaction_id.place(x=550, y=700)
+transaction_id_writing = tk.Label(root, text="Transaction id here:", height=2)
+transaction_id_writing.place(x=430, y=700)
+CheckPayment = tk.Button(root, text="Check Payment", fg="black", bg="white", padx=130, pady=5, command=check_payment)
 CheckPayment.place(x=900, y=700)
-
+img = tk.PhotoImage(file="bitcoin.png")
+canvas.create_image(900, 770, image=img)
 
 root.mainloop()
