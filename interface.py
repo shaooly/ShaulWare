@@ -46,5 +46,7 @@ CheckPayment = tk.Button(root, text="Check Payment", fg="black", bg="white", pad
 CheckPayment.place(x=900, y=700)
 img = tk.PhotoImage(file="bitcoin.png")
 canvas.create_image(900, 770, image=img)
+img = tk.PhotoImage(file="red_lock.png")
+canvas.create_image(200, 200, image=img)
 
 root.mainloop()
