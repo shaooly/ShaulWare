@@ -6,4 +6,3 @@ def setWallpaper(path):
 
 setWallpaper("C:/Users/shaoo/Desktop/sasS.jpg")
 
-#
