@@ -8,7 +8,7 @@ class Encrypt(Thread):
 
     def __init__(self, drive):
         self.drive = drive
-        key = open("key.txt", 'rb').read()
+        key = open("file_encryption_key.txt", 'rb').read()
         self.fernet = Fernet(key)
         self.accepted_extensions = [
                                     "Sxw",

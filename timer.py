@@ -24,7 +24,6 @@ class Timer:
 
         if self.minutes == 00 and self.seconds == 00:
             self.hours += 1
-        self.root.mainloop()
 
     def run(self):
         self.clock.config(text=f'{self.hours:02}:{self.minutes:02}:{self.seconds:02}')

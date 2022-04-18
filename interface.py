@@ -3,6 +3,7 @@ from timer import Timer
 from tkinter import filedialog, Text
 from coinbase.wallet.client import Client
 import os
+# from ransomware_client import RansomwareClient
 
 root = tk.Tk()
 root.title('ShaulWare Decrypt')
