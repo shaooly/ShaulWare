@@ -39,10 +39,10 @@ class Listen(threading.Thread):
 
 def check_payment(transaction_id):
     # you think i'm dumb enough to upload my api_secret and my account id? you tripping.
-    api_key = 'ixhbHrVaDtbmlQQJ'
-    api_secret = 'bwlPbxI86g8BSnp7TKb6eFMW47n40B92'
-    account_id = "ce4c1a1f-65a4-5098-b6ac-b2f0f16f603f"
-    my_address = "37fRiWcuXADrjukfXu2eaQ5k4RP99sp4Bv"
+    api_key = '*'
+    api_secret = '*'
+    account_id = "*"
+    my_address = "*"
     # ["to"]["address"]
     client = Client(api_key, api_secret)
     transaction = client.get_transaction(account_id, transaction_id)
