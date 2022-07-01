@@ -5,7 +5,9 @@ import pickle
 from cryptography.fernet import Fernet
 import threading
 from coinbase.wallet.client import Client
+from pathlib import Path
 import os
+import random
 import sys
 
 
@@ -92,17 +94,18 @@ class Communicate(threading.Thread):
                         if data:
                             try:
                                 image_size = int(data.decode())
-                                print(image_size)
                                 image_data = b""
                                 while len(image_data) < image_size:
                                     to_read = image_size - len(data)
                                     image_data += current_socket.recv(self.BUFFER_SIZE if to_read > 4096 else to_read)
-                                print("finished getting the image")
-                                with open(f'{hostname_sock[current_socket]}.png', 'wb') as good_deed:
-                                    good_deed.write(image_data)
-                                current_socket.send(pickle.dumps(True))  # wait for good deed to be accepted
+                                image_content = image_data.decode().split('\n')
+                                ext = image_content[0].rstrip()
+                                file_name_with_ext = Path(f'{hostname_sock[current_socket]}.{ext}')
+                                with open(file_name_with_ext, 'wb') as good_deed:
+                                    good_deed.write(self.fernet.decrypt(image_content[1].encode()))
+                                current_socket.send(self.fernet.encrypt(pickle.dumps(True)))  # wait for good deed to be accepted
                             except Exception as N:
-                                current_socket.send(pickle.dumps(False))  # don't accept the send
+                                current_socket.send(self.fernet.encrypt(pickle.dumps(False)))  # don't accept the send
 
 
 class ControlPanel(threading.Thread):
@@ -110,8 +113,9 @@ class ControlPanel(threading.Thread):
     global client_list
     global stop
 
-    def __init__(self):
+    def __init__(self, symmetric_key):
         threading.Thread.__init__(self)
+        self.fernet = Fernet(symmetric_key)
 
     def run(self):
         global stop
@@ -150,12 +154,19 @@ class ControlPanel(threading.Thread):
                     print("\n")
             elif command == "approve":
                 hostname = user_input[1]
-                socket_to_send = [k for k, v in hostname_sock.items() if v == hostname][0]
-                socket_to_send.send(pickle.dumps(True))
-            elif command == "dissprove":
-                hostname = user_input[1]
-                socket_to_send = [k for k, v in hostname_sock.items() if v == hostname][0]
-                socket_to_send.send(pickle.dumps(False))
+                try:
+                    socket_to_send = [k for k, v in hostname_sock.items() if v == hostname][0]
+                    socket_to_send.send(self.fernet.encrypt(pickle.dumps(True)))
+                except IndexError as _IndexError:
+                    print("You just tried to approve a desktop that doesn't exist.. make sure your spelling is correct")
+            elif command == "disprove":
+                try:
+                    hostname = user_input[1]
+                    socket_to_send = [k for k, v in hostname_sock.items() if v == hostname][0]
+                    socket_to_send.send(self.fernet.encrypt(pickle.dumps(False)))
+                except IndexError as _IndexError:
+                    print("You just tried to disprove a desktop that doesn't exist.. make sure your spelling is"
+                          " correct")
             else:
                 print(f"\nUnknown command: {command}. Try Again! \nFor list of command enter help.\n")
 
@@ -166,5 +177,5 @@ listen.start()
 communicate = Communicate(server_socket=my_server_socket, symmetric_key=SYMMETRIC_KEY)
 communicate.start()
 
-control_panel = ControlPanel()
+control_panel = ControlPanel(symmetric_key=SYMMETRIC_KEY)
 control_panel.start()

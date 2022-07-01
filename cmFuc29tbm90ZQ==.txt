@@ -21,6 +21,8 @@ Can I recover my files?
 Sure you can. We gurantee you can recover all your files safely and easily.
 In order to recover your files you need to upload an image through
 the button at the bottom of the screen to the server.
+Excepted file types or jpg, jpeg and png. If your image is not of that sort
+please use an online convertor.
 After you uploaded the files it will be checked by our team of
 experts, who will make sure your image is valid. When your image
 has been approved, your files will be safely returned to you,
