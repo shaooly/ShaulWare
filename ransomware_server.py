@@ -11,7 +11,7 @@ import random
 import sys
 
 
-SERVER_ADDRESS = ('', 17694)
+SERVER_ADDRESS = ('10.0.0.10', 17694)
 client_list = []
 information_list = []
 hostname_sock = {}

